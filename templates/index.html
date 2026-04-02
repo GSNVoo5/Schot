@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Schot{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Трекер действий</h1>
+    <p class="muted">Действия снизу</p>
+</div>
+
+<div class="grid">
+    <div class="card">
+        {% if edit_item %}
+            <h2>Редактировать запись</h2>
+            <form method="POST" action="{{ url_for('update_action', action_id=edit_item.id) }}">
+                <label>
+                    Название действия
+                    <input type="text" name="action_name" value="{{ edit_item.action_name }}" required>
+                </label>
+
+                <label>
+                    Количество
+                    <input type="number" name="count" min="1" value="{{ edit_item.count }}" required>
+                </label>
+
+                <label>
+                    Дата и время
+                    <input type="datetime-local" name="action_datetime" value="{{ edit_item.action_datetime.strftime('%Y-%m-%dT%H:%M') }}" required>
+                </label>
+
+                <div class="actions">
+                    <button type="submit">Сохранить</button>
+                    <a class="btn btn-secondary" href="{{ url_for('home') }}">Отмена</a>
+                </div>
+            </form>
+        {% else %}
+            <h2>Добавить запись</h2>
+            <form method="POST" action="{{ url_for('add_action') }}">
+                <label>
+                    Название действия
+                    <input type="text" name="action_name" required>
+                </label>
+
+                <label>
+                    Количество
+                    <input type="number" name="count" min="1" required>
+                </label>
+
+                <label>
+                    Дата и время
+                    <input type="datetime-local" name="action_datetime" required>
+                </label>
+
+                <button type="submit">Добавить</button>
+            </form>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2>Общая статистика</h2>
+        {% if summary %}
+            {% for item in summary %}
+                <div class="stats-item">
+                    <span>{{ item[0] }}</span>
+                    <strong>{{ item[1] }}</strong>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="muted">Пока нет записей.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="grid-3">
+    <div class="card">
+        <h2>График</h2>
+        {% if chart_labels %}
+            <canvas id="statsChart"></canvas>
+        {% else %}
+            <p class="muted">Добавь записи, чтобы появился график.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2>Все записи</h2>
+        {% if actions %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Действие</th>
+                        <th>Количество</th>
+                        <th>Дата</th>
+                        <th>Управление</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for action in actions %}
+                        <tr>
+                            <td>{{ action.action_name }}</td>
+                            <td>{{ action.count }}</td>
+                            <td>{{ action.action_datetime.strftime('%d.%m.%Y %H:%M') }}</td>
+                            <td>
+                                <div class="actions">
+                                    <a class="btn btn-secondary" href="{{ url_for('home', edit=action.id) }}">Редактировать</a>
+                                    <a class="btn btn-danger" href="{{ url_for('delete_action', action_id=action.id) }}" onclick="return confirm('Удалить запись?')">Удалить</a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="muted">Записей пока нет.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% if chart_labels %}
+<script>
+    const labels = {{ chart_labels|tojson }};
+    const data = {{ chart_values|tojson }};
+
+    new Chart(document.getElementById('statsChart'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Общее количество',
+                data: data,
+                borderWidth: 1,
+                borderRadius: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    labels: { color: '#eef2ff' }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: '#cbd5e1' },
+                    grid: { color: 'rgba(255,255,255,0.06)' }
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: '#cbd5e1' },
+                    grid: { color: 'rgba(255,255,255,0.06)' }
+                }
+            }
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}
